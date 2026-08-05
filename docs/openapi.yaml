@@ -1,0 +1,116 @@
+openapi: 3.0.3
+info:
+  title: SAT Online Platform API
+  version: 1.0.0
+  description: API documentation for SAT Exam Management, Scoring, Asynchronous Queue Processing, and Partner Integration Microservices.
+servers:
+  - url: http://localhost:8000
+    description: Kong API Gateway Production/Lab Environment
+  - url: http://localhost:3002
+    description: Direct Exam Service Internal Environment
+
+paths:
+  /api/exams:
+    get:
+      summary: Retrieve list of available SAT exams
+      description: Fetches all available SAT exams. Utilizes Redis caching with PostgreSQL fallback for high performance.
+      responses:
+        '200':
+          description: Successful response with exam list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  source:
+                    type: string
+                    example: database
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        title:
+                          type: string
+                          example: SAT Practice Test 1
+                        duration:
+                          type: integer
+                          example: 180
+        '500':
+          description: Internal server error or database connection failure
+
+  /api/submit-exam:
+    post:
+      summary: Submit student exam answers for asynchronous processing and partner evaluation
+      description: Receives student submission, dispatches to RabbitMQ queue, and triggers partner evaluation API.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - studentId
+                - answers
+              properties:
+                studentId:
+                  type: string
+                  example: std_12345
+                answers:
+                  type: object
+                  example: {"q1": "A", "q2": "C"}
+      responses:
+        '201':
+          description: Exam submitted successfully and queued for grading
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Exam submitted successfully and queued for grading
+                  submission:
+                    type: object
+        '400':
+          description: Bad request (missing required fields)
+        '500':
+          description: Failed to process submission
+
+  /api/evaluate:
+    post:
+      summary: Partner mock service evaluation endpoint
+      description: External or mock partner service endpoint to evaluate student submissions and return scoring results.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                studentId:
+                  type: string
+                  example: std_12345
+                answers:
+                  type: object
+            required:
+              - studentId
+      responses:
+        '200':
+          description: Evaluation processed successfully by partner service
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: EVALUATED
+                  score:
+                    type: integer
+                    example: 1450
+        '400':
+          description: Invalid evaluation payload

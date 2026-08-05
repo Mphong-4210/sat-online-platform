@@ -1,0 +1,12 @@
+_format_version: "3.0"
+services:
+  - name: exam-service
+    url: http://exam-service:3002
+    routes:
+      - name: exam-route
+        paths:
+          - /api/exams
+          - /api/submit-exam
+    plugins:
+      - name: cors
+      - name: key-auth

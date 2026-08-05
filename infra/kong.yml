@@ -1,0 +1,31 @@
+_format_version: "3.0"
+services:
+  - name: exam-service
+    url: http://exam-service:3002
+    routes:
+      - name: exam-route
+        paths:
+          - /api/exams
+          - /api/submit-exam
+          - /api/evaluate
+          - /health
+        methods:
+          - GET
+          - POST
+      - name: metrics-route
+        paths:
+          - /metrics
+        methods:
+          - GET
+    plugins:
+      - name: cors
+      - name: jwt
+        config:
+          uri_param_names:
+            - jwt
+          claims_to_verify:
+            - exp
+      - name: rate-limiting
+        config:
+          minute: 60
+          policy: local
